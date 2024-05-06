@@ -1,0 +1,50 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+secretGenerator:
+- name: mysql-root-pass
+  literals:
+  - password=REDACTED
+- name: wp-db-host
+  literals:
+    - host=REDACTED
+- name: wp-db-user
+  literals:
+    - password=REDACTED
+- name: mysql-db-pass
+  literals: 
+    - password=REDACTED
+- name: wp-db-name
+  literals:
+    - password=REDACTED
+resources: 
+  # Enable/uncomment if using RPI or any other setup other then public cloud
+  # Reference: https://microk8s.io/docs/addon-metallb
+  - metallb.yaml
+  
+  # Enable/uncomment if using nfs-server-k8s on public or private cloud
+  # Reference: https://github.com/AdnanHodzic/nfs-server-k8s, "nfs-server-k8s" references in https://foolcontrol.org/?p=4004
+  #- nfs.yaml
+
+  # Enable/uncomment if using RPI or any other setup then public cloud
+  - nfs-synology.yaml
+
+  # Enable/uncomment if you want to deploy MySQL cluster using MySQL operator
+  #- mysql-cluster.yaml
+
+  # Leave enabled/uncommented for both private and public cloud (WordPress deployment)
+  - wordpress-deployment.yaml
+
+  # Enable/uncomment if you using public cloud (temp disabled for private)
+  # - vpa.yaml
+
+  # Warning: autoscaling/v2beta2 HorizontalPodAutoscaler is deprecated in v1.23+, unavailable in v1.26+; use autoscaling/v2 HorizontalPodAutoscaler
+  - hpa.yaml
+
+  # Enable/uncomment if using public cloud or if you using inlets-operator on private cloud/RPI
+  #- ingress.yaml
+
+# References:
+# wp-k8s: WordPress on privately hosted Kubernetes cluster (Raspberry Pi 4 + Synology): https://foolcontrol.org/?p=4004
+# wp-k8s: WordPress on Kubernetes project (GKE, cloud SQL, NFS, cluster autoscaling, HPA, VPA, Ingress, Let’s Encrypt): https://foolcontrol.org/?p=3754
+# rpi-microk8s-bootstrap: Automate RPI device conversion into Kubernetes cluster nodes with Terraform: https://github.com/AdnanHodzic/rpi-microk8s-bootstrap
+# nfs-server-k8s: NFS server container image for Kubernetes: https://github.com/AdnanHodzic/nfs-server-k8s
