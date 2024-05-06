@@ -60,10 +60,10 @@ gcloud container clusters create wp-k8s \
   --no-enable-cloud-logging
 ```
 ### Cloud SQL (MySQL base de datos de WordPress)
-* Crea una instancia de Cloud SQL MySQL desde la consola de GCP.
-* Configura la instancia con las especificaciones deseadas.
-* Crea la base de datos de WordPress.
-* Proporciona permisos de acceso a la base de datos.
+* Creamos una instancia de Cloud SQL MySQL desde la consola de GCP.
+* Configuramos la instancia con las especificaciones deseadas.
+* Creamos la base de datos de WordPress.
+* Proporcionamos permisos de acceso a la base de datos.
 
 ![imagen](https://github.com/csofia1408/Reto4TopicosTelem-tica/assets/72955238/45d1a86b-fded-40c0-84c6-692a6b37899f)
 
@@ -74,7 +74,66 @@ gcloud container clusters create wp-k8s \
 gcloud compute disks create --size=10GB --zone=europe-west4-a wp-nfs-disk
 ```
 ### WordPress
+* Configurar el archivo Kustomization
+```
+kind: Kustomization
+secretGenerator:
+- name: mysql-root-pass
+  literals:
+  - password=REDACTED
+- name: wp-db-host
+  literals:
+    - host=REDACTED
+- name: wp-db-user
+  literals:
+    - password=REDACTED
+- name: mysql-db-pass
+  literals: 
+    - password=REDACTED
+- name: wp-db-name
+  literals:
+    - password=REDACTED
+resources: 
+  - metallb.yaml
+  - nfs-synology.yaml
+  - wordpress-deployment.yaml
+  - hpa.yaml
+```
+* Despliegamos WordPress, NFS server, Ingress, VPA y HPA a través de los yaml ejecutando:
+```
+kubectl apply -k ./
+```
+### Ingress
+* Agregamos el repositorio de Helm de ingress-nginx:
+  ```
+  helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+  ```
+* Instalamos el chart de ingress-nginx:
+  ```
+  helm install ingress ingress-nginx/ingress-nginx --set 'ingress.annotations.nginx.ingress.kubernetes.io/client-max-body-size=40m'
+  ```
+* Espera a que se exponga la IP externa del controlador de ingress:
+  ```
+  kubectl get services -w ingress-ingress-nginx-controller
+  ```
+* Actualiza el registro DNS con la IP externa expuesta.
 
+### Cert-manager (Let's Encrypt)
+
+* Agregamos el repositorio de Helm de cert-manager:
+  ```
+  helm repo add jetstack https://charts.jetstack.io
+  ```
+* Creamos un espacio de nombres para cert-manager:
+  ```
+  kubectl create namespace cert-manager
+  ```
+* Instalamos cert-manager:
+  ```
+  helm install cert-manager jetstack/cert-manager --namespace cert-manager --set installCRDs=true
+  ```
+* Creamos los emisores de certificado Let's Encrypt.
+    
 # 4. Descripción del ambiente de desarrollo y técnico: lenguaje de programación, librerias, paquetes, etc, con sus numeros de versiones.
 El ambiente de desarrollo y técnico utilizado para este proyecto está compuesto por las siguientes tecnologías y herramientas:
 - **Contenedores y Orquestación**: Se emplea Docker para la creación y gestión de contenedores, permitiendo la encapsulación de la aplicación y sus dependencias. Kubernetes se utiliza para la orquestación de contenedores, proporcionando una plataforma robusta y escalable para la ejecución de la aplicación en clústeres.
@@ -84,5 +143,32 @@ El ambiente de desarrollo y técnico utilizado para este proyecto está compuest
 - **Monitoreo y Métricas**: Se integra el monitoreo y la recolección de métricas mediante herramientas como Prometheus y Grafana, permitiendo la observabilidad y el análisis del rendimiento del sistema.
 - **Control de Versiones**: Git se utiliza como sistema de control de versiones para el seguimiento de los cambios en el código fuente y la colaboración entre los miembros del equipo de desarrollo.
 - **Infraestructura como Código (IaC)**: Se adopta la práctica de infraestructura como código, utilizando archivos YAML y scripts de automatización para describir y gestionar la infraestructura de manera programática.
+
+# 5. otra información que considere relevante para esta actividad.
+### Glosario de Terminos
+* Kubernetes (K8s): Plataforma de código abierto diseñada para automatizar la implementación, escalado y administración de aplicaciones en contenedores.
+* Google Kubernetes Engine (GKE): Servicio de Google Cloud Platform que permite ejecutar cargas de trabajo de contenedores en la infraestructura de Google, gestionado por Kubernetes.
+* Cloud SQL: Servicio de base de datos relacional de Google Cloud Platform, que permite implementar, mantener y administrar bases de datos MySQL, PostgreSQL y SQL Server en la nube.
+* Persistent Volume (PV): Recurso en Kubernetes que representa un volumen de almacenamiento persistente en el clúster, independiente del ciclo de vida de los pods.
+* Persistent Volume Claim (PVC): Solicitud de almacenamiento persistente en Kubernetes, que permite a los pods acceder a un volumen de almacenamiento persistente mediante una abstracción declarativa.
+* NFS (Network File System): Protocolo de sistema de archivos distribuido que permite a los clientes acceder y compartir archivos almacenados en un servidor a través de una red.
+* Ingress: Recurso en Kubernetes que gestiona el acceso externo a los servicios en un clúster, mediante la exposición de rutas HTTP y HTTPS.
+* Horizontal Pod Autoscaler (HPA): Característica en Kubernetes que automáticamente escala el número de pods en función de la carga de trabajo, ajustando la cantidad de réplicas para satisfacer la demanda.
+* Vertical Pod Autoscaler (VPA): Componente en Kubernetes que ajusta los límites de recursos de los contenedores en función de la utilización de recursos observada, optimizando la eficiencia y el rendimiento.
+* Cert-manager: Controlador en Kubernetes que automatiza la solicitud, emisión y renovación de certificados TLS, incluyendo los proporcionados por Let's Encrypt.
+* Let's Encrypt: Autoridad de certificación que ofrece certificados TLS gratuitos y automatizados, utilizados para habilitar conexiones seguras HTTPS en aplicaciones web.
+  
+Referencias:
+- Kubernetes: [Documentación oficial de Kubernetes](https://kubernetes.io/docs/home/)
+- Google Kubernetes Engine (GKE): [Documentación oficial de GKE](https://cloud.google.com/kubernetes-engine/docs)
+- Cloud SQL: [Documentación oficial de Cloud SQL](https://cloud.google.com/sql/docs)
+- NFS (Network File System): [Documentación oficial de NFS](https://help.ubuntu.com/community/SettingUpNFSHowTo)
+- Autoscaling en Kubernetes: [Documentación oficial de Kubernetes sobre Autoscaling](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
+- Ingress en Kubernetes: [Documentación oficial de Kubernetes sobre Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/)
+- Let's Encrypt: [Sitio web oficial de Let's Encrypt](https://letsencrypt.org/)
+- Cert-manager: [Documentación oficial de cert-manager](https://cert-manager.io/docs/)
+- Vertical Pod Autoscaler (VPA): [Documentación oficial de VPA](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler)
+- Horizontal Pod Autoscaler (HPA): [Documentación oficial de HPA](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
+- Metallb: [Documentación oficial de Metallb](https://metallb.universe.tf/)
 
 
