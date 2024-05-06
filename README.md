@@ -43,13 +43,37 @@ El presente proyecto tiene como objetivo en desplegar una aplicación Dockerizad
 - En el diagrama anterior, el clúster se encuentra en estado autoescalado. Representa un estado en el que cumple las condiciones de utilización de CPU/Memoria definidas en nuestro HPA y ha generado WordPress adicionales y 2 pods Ingress adicionales . Cuando el clúster detecte que se necesitan más recursos para los pods, se añadirán más nodos al clúster.
 
 # 3.Detalles del Desarrollo
-Provisionar el clúster de GKE con el autoscaler de clúster y VPC nativa
+### Provisionar el clúster de GKE con el autoscaler de clúster y VPC nativa
 
 ```
-function test() {
-  console.log("notice the blank line before this function?");
-}
+gcloud container clusters create wp-k8s \
+  --zone europe-west4-a \
+  --machine-type e2-small \
+  --disk-size 10 \
+  --enable-autoscaling \
+  --enable-vertical-pod-autoscaling \
+  --num-nodes 1 \
+  --min-nodes 1 \
+  --max-nodes 2 \
+  --enable-ip-alias \
+  --create-subnetwork name="" \
+  --no-enable-cloud-logging
 ```
+### Cloud SQL (MySQL base de datos de WordPress)
+* Crea una instancia de Cloud SQL MySQL desde la consola de GCP.
+* Configura la instancia con las especificaciones deseadas.
+* Crea la base de datos de WordPress.
+* Proporciona permisos de acceso a la base de datos.
+
+![imagen](https://github.com/csofia1408/Reto4TopicosTelem-tica/assets/72955238/45d1a86b-fded-40c0-84c6-692a6b37899f)
+
+
+### NFS y almacenamiento persistente
+* Crea un disco persistente en GKE
+```
+gcloud compute disks create --size=10GB --zone=europe-west4-a wp-nfs-disk
+```
+### WordPress
 
 # 4. Descripción del ambiente de desarrollo y técnico: lenguaje de programación, librerias, paquetes, etc, con sus numeros de versiones.
 El ambiente de desarrollo y técnico utilizado para este proyecto está compuesto por las siguientes tecnologías y herramientas:
